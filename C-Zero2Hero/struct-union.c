@@ -5,6 +5,9 @@
 #define MAX_IDS 32
 #define MAX_EMPLPOYEES 100
 
+//__atrribute__((__packed__)) part will create the same struct but ensure that
+//the compiler won't add any special sauce in between the elements so we can
+//ensure it's the same size on multiple system
 struct employee_t {
   int id;
   char firstname[64];
@@ -21,6 +24,8 @@ union Data {
 };
 
 int main () {
+  struct employee_t employee[MAX_EMPLPOYEES];
+
   union Data data;
 
   data.intValue = 10;
