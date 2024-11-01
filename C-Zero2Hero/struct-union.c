@@ -17,6 +17,8 @@ struct employee_t {
 
 };
 
+// Only assign 1 memory location for every elements.
+// The size of the memory is of the largest element
 union Data {
   int intValue;
   float floatValue;
@@ -39,6 +41,7 @@ int main () {
 
     // Notice that only the last value assigned (charValue) is correctly printed
     printf("\nAfter all assignments:\n");
+    printf("Size of the location %ld\n", sizeof(data));
     printf("Int Value: %d\n", data.intValue);
     printf("Float Value: %.2f\n", data.floatValue);
     printf("Char Value: %c\n", data.charValue);
