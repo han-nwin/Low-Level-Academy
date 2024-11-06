@@ -23,6 +23,9 @@ typedef struct {
 
 void handle_client(int fd) {
   char buff[BUFF_SIZE] = {0};
+  /**
+   * memset(buff, 0, BUFF_SIZE); // more dynamic 
+   * */
   proto_header_t * header = (proto_header_t *)buff; //work with stack space
   header->type = htons(PROTO_HELLO);
   header->len = htons(header->len);
@@ -40,9 +43,15 @@ int main() {
   
   //Initialize sock address in | need to cast to sockaddr later
   struct sockaddr_in serverInfo = {0}; // 0 out server info -> if not might fail at bind
-
+  /**
+   * memset(&serverInfo, 0, sizeof(serverInfo)); //more dynamic
+   * */
   //Client socket 
   struct sockaddr_in clientInfo = {0};
+  /**
+   * memset(&clientInfo, 0, sizeof(clientInfo)); //more dynamic
+   * */
+
   int clientSize = sizeof(clientInfo);
 
   serverInfo.sin_family = AF_INET; //IPv4

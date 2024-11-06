@@ -55,6 +55,9 @@ int main(int argc, char **argv) {
     return 1;
   }
   struct sockaddr_in serverInfo = {0};
+  /**
+   * memset(&serverInfo, 0, sizeof(serverInfo)); //more dynamic 
+   * */
 
   serverInfo.sin_family = AF_INET; //IPv4
   // Set address using a string
