@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/_types/_socklen_t.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -56,13 +57,13 @@ int main() {
   int freeSlot; //track free slot
 
   //Initialize sock address in | need to cast to sockaddr later
-  struct sockaddr_in serverInfo; 
-  struct sockaddr_in clientInfo; 
-  int clientSize = sizeof(clientInfo);
+  struct sockaddr_in server_address; 
+  struct sockaddr_in client_address; 
+  socklen_t client_size = sizeof(client_address);
 
   //Initialize memory for serverInfo and clientInfo
-  memset(&serverInfo, 0, sizeof(serverInfo)); //more dynamic
-  memset(&clientInfo, 0, sizeof(clientInfo)); //more dynamic
+  memset(&server_address, 0, sizeof(server_address)); //more dynamic
+  memset(&client_address, 0, sizeof(client_address)); //more dynamic
 
   //Initialize sets of read and write
   fd_set read_fds;
@@ -70,8 +71,8 @@ int main() {
 
 
   //Set connection protocol and port
-  serverInfo.sin_family = AF_INET; //IPv4
-  serverInfo.sin_addr.s_addr = INADDR_ANY;
+  server_address.sin_family = AF_INET; //IPv4
+  server_address.sin_addr.s_addr = INADDR_ANY;
   /** Set address using a string
    *if (inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr) <= 0) {
       perror("Invalid address / Address not supported");
@@ -79,7 +80,7 @@ int main() {
     }   
     serverInfo.sin_addr.s_addr = inet_addr("127.0.0.1");
     */
-  serverInfo.sin_port = htons(PORT); // 0x12345678 0x87654321
+  server_address.sin_port = htons(PORT); // 0x12345678 0x87654321
 
 
   //Open a socket
@@ -92,21 +93,21 @@ int main() {
 
 
   //bind
-  if (bind(listen_fd, (struct sockaddr *)&serverInfo, sizeof(serverInfo)) == -1){
+  if (bind(listen_fd, (struct sockaddr *)&server_address, sizeof(server_address)) == -1){
     perror("Bind Failed");
     return -1;
   }
 
 
-  //listen
-  if (listen(listen_fd, 0) == -1) {
+  //listen. Backlog 10 connections
+  if (listen(listen_fd, 10) == -1) {
     perror("listen failed");
     return -1;
   }
 
   //converting ip address to human-readable form
   char ip_str[INET_ADDRSTRLEN];
-  inet_ntop(AF_INET, &serverInfo.sin_addr, ip_str, INET_ADDRSTRLEN);
+  inet_ntop(AF_INET, &server_address.sin_addr, ip_str, INET_ADDRSTRLEN);
   printf("Server is listening to IP: %s port %d\n", ip_str, PORT);
 
 
@@ -118,7 +119,32 @@ int main() {
     FD_ZERO(&write_fds);
 
     // Add the listening socket to the read set
-    FD_SET(listen_fd)
+    FD_SET(listen_fd, &read_fds); //000000010010100
+    num_fds = listen_fd + 1; //set number of fd to the maximum value of fd + 1
+
+    //Add active clients to read set
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+      if (clientStates[i].fd != -1) {
+        FD_SET(clientStates[i].fd, &read_fds);
+        if (clientStates[i].fd > num_fds) {
+          num_fds = clientStates[i].fd + 1; // update num fd if needed
+        }
+      }
+    }
+
+    //Wait for an activity on one of the sockets
+    if (select (num_fds, &read_fds, &write_fds, NULL, NULL) == -1) {
+      perror("select");
+      return -1;
+    }
+
+    //Check for new connection then connect(accept)
+    if (FD_ISSET(listen_fd, &read_fds)) {
+      if (accept(listen_fd, (struct sockaddr*)&client_address, &client_size) == -1) {
+        perror("accept");
+        return -1;
+      }
+    }
 
 
   }
