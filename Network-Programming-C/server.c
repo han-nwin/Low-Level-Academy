@@ -8,11 +8,13 @@
 #define PORT 5555
 #define BUFF_SIZE 4096
 
+
 typedef enum {
   PROTO_HELLO,
   PROTO_WORLD,
 
 } proto_type_e;
+
 
 //TLV (type length value) system
 typedef struct {
@@ -20,6 +22,7 @@ typedef struct {
   unsigned short len;
 
 } proto_header_t;
+
 
 void handle_client(int fd) {
   char buff[BUFF_SIZE] = {0};
@@ -38,6 +41,8 @@ void handle_client(int fd) {
   //write header and int data
   write(fd, header, sizeof(proto_header_t) + sizeof(int));
 }
+
+
 
 int main() {
   

@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
     printf("Usage: %s <ip of the host>\n", argv[0]);
     return 1;
   }
+
   struct sockaddr_in serverInfo = {0};
   /**
    * memset(&serverInfo, 0, sizeof(serverInfo)); //more dynamic 
