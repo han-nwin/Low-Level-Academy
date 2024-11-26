@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <sys/_types/_socklen_t.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -53,6 +52,9 @@ int find_free_slot() {
 //Main function
 int main() {
   
+  //Initialize and reset client array
+  init_client();
+  
   int num_fds; //track number of fd
   int freeSlot; //track free slot
 
@@ -69,6 +71,8 @@ int main() {
   fd_set read_fds;
   fd_set write_fds;
 
+  //Connection fd Initialize
+  int conn_fd;
 
   //Set connection protocol and port
   server_address.sin_family = AF_INET; //IPv4
@@ -140,12 +144,40 @@ int main() {
 
     //Check for new connection then connect(accept)
     if (FD_ISSET(listen_fd, &read_fds)) {
-      if (accept(listen_fd, (struct sockaddr*)&client_address, &client_size) == -1) {
+      if ((conn_fd = accept(listen_fd, (struct sockaddr*)&client_address, &client_size)) == -1) {
         perror("accept");
         return -1;
       }
-    }
+      printf("New connections from %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
 
+      // Find a free slot for the new connection
+      freeSlot = find_free_slot();
+      if (freeSlot == -1) {
+        printf("Server full: Closing new connection\n");
+        close(conn_fd);
+      } else {
+          clientStates[freeSlot].fd = conn_fd;
+          clientStates[freeSlot].state = STATE_CONNECTED;
+      }
+
+    }
+    
+    //Handle all clients
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+      if (clientStates[i].fd != -1 && FD_ISSET(clientStates[i].fd, &read_fds)) {
+
+        ssize_t bytes_read = read(clientStates[i].fd, &clientStates[i].buffer, sizeof(clientStates[i].buffer));
+
+        if (bytes_read <= 0) {
+          close(clientStates[i].fd);
+          clientStates[i].fd = -1;
+          clientStates[i].state = STATE_DISCONNECTED;
+          printf("Client disconnected or error\n");
+        } else {
+            printf("Received data from client %s\n", clientStates[i].buffer);
+        }
+      }
+    }
 
   }
   //return 0;
